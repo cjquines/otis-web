@@ -1,8 +1,11 @@
 import io
 import json
 from typing import Any
+from unittest import mock
 
 import pytest
+from django.core.files.base import ContentFile
+from django.core.files.storage import storages
 from django.test.utils import override_settings
 from django.urls import reverse
 from pypdf import PdfReader
@@ -14,8 +17,10 @@ from core.factories import (
     UnitFactory,
     UnitGroupFactory,
     UserFactory,
+    mock_pdf,
 )
 from core.models import Semester
+from core.utils import CACHE_MAX_AGE
 from core.watermark import (
     get_corner_text,
     get_watermark_text,
@@ -153,6 +158,100 @@ def test_watermark_all_pages():
         stamp = verify_corner_stamp(text)
         assert stamp is not None
         assert stamp.pk == alice.pk
+
+
+@pytest.mark.django_db
+@override_settings(TESTING_NEEDS_MOCK_MEDIA=True)
+def test_protected_file_revalidation(otis):
+    # Refreshing a downloaded PDF should not re-fetch and re-stamp the whole
+    # file; the browser gets a 304 and keeps the copy it already has.
+    alice = StudentFactory.create()
+    unit = UnitFactory.create()
+    alice.unlocked_units.add(unit)
+    otis.login(alice)
+
+    resp = otis.get_20x("view-problems", unit.pk)
+    etag = resp.headers["ETag"]
+    assert etag.startswith('W/"')
+    assert resp.headers["Cache-Control"] == f"private, max-age={CACHE_MAX_AGE}"
+
+    # The whole point: a revalidation doesn't re-stamp the file.
+    with mock.patch(
+        "core.utils.watermark_pdf", side_effect=AssertionError("re-watermarked")
+    ):
+        again = otis.get("view-problems", unit.pk, headers={"if-none-match": etag})
+    assert again.status_code == 304
+    assert again.content == b""
+    assert again.headers["ETag"] == etag
+    assert again.headers["Cache-Control"] == f"private, max-age={CACHE_MAX_AGE}"
+
+    # A stale tag still gets the real file.
+    stale = otis.get("view-problems", unit.pk, headers={"if-none-match": 'W/"nope"'})
+    assert stale.status_code == 200
+    assert stale.headers["ETag"] == etag
+
+    # TeX downloads are revalidated the same way.
+    tex = otis.get_20x("view-tex", unit.pk)
+    tex_again = otis.get(
+        "view-tex", unit.pk, headers={"if-none-match": tex.headers["ETag"]}
+    )
+    assert tex_again.status_code == 304
+
+
+@pytest.mark.django_db
+@override_settings(TESTING_NEEDS_MOCK_MEDIA=True)
+def test_protected_file_etag_invalidation(otis):
+    alice = StudentFactory.create()
+    bob = StudentFactory.create()
+    unit = UnitFactory.create()
+    for student in (alice, bob):
+        student.unlocked_units.add(unit)
+
+    otis.login(alice)
+    alice_etag = otis.get_20x("view-problems", unit.pk).headers["ETag"]
+
+    # Bob's copy is watermarked with Bob's name, so he must not be able to
+    # revalidate his way into Alice's.
+    otis.login(bob)
+    assert otis.get_20x("view-problems", unit.pk).headers["ETag"] != alice_etag
+    assert (
+        otis.get(
+            "view-problems", unit.pk, headers={"if-none-match": alice_etag}
+        ).status_code
+        == 200
+    )
+
+    # Replacing the file on the storage invalidates what everyone has cached.
+    otis.login(alice)
+    path = f"unit-pdf/{unit.problems_pdf_filename}"
+    protected = storages["protected"]
+    protected.delete(path)
+    protected.save(path, ContentFile(mock_pdf(b"Revised")))
+    resp = otis.get("view-problems", unit.pk, headers={"if-none-match": alice_etag})
+    assert resp.status_code == 200
+    assert resp.headers["ETag"] != alice_etag
+    assert "Revised" in PdfReader(io.BytesIO(resp.content)).pages[0].extract_text()
+
+
+@pytest.mark.django_db
+@override_settings(TESTING_NEEDS_MOCK_MEDIA=True)
+def test_protected_file_without_mtime(otis):
+    # A storage that can't report a modification time still serves the file,
+    # just without a validator on it.
+    alice = StudentFactory.create()
+    unit = UnitFactory.create()
+    alice.unlocked_units.add(unit)
+    otis.login(alice)
+
+    def no_mtime(name: str):
+        raise NotImplementedError
+
+    with mock.patch.object(
+        storages["protected"], "get_modified_time", side_effect=no_mtime
+    ):
+        resp = otis.get_20x("view-problems", unit.pk)
+    assert "ETag" not in resp.headers
+    assert "Prob" in PdfReader(io.BytesIO(resp.content)).pages[0].extract_text()
 
 
 @pytest.mark.django_db

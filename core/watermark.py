@@ -31,6 +31,11 @@ CORNER_MARGIN = 8  # points from the bottom-right corner of the page
 CORNER_FONT_SIZE = 6
 INVISIBLE_COLOR = Color(1, 1, 1, alpha=0.05)
 
+# Bump when a change to the stamping would make an already-cached download
+# stale; it is part of the ETag in `core.utils`, so bumping it re-stamps
+# everyone's copy.
+WATERMARK_VERSION = 1
+
 WATERMARK_SALT = "core.watermark"
 SIG_LENGTH = 32  # hex chars (128 bits) of the HMAC-SHA256 digest; plenty
 CORNER_STAMP_RE = re.compile(rf"OTIS PK (\d+) TS (\d+) SIG ([0-9a-f]{{{SIG_LENGTH}}})")
