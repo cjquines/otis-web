@@ -1,4 +1,7 @@
-from factory.declarations import SubFactory
+from datetime import timedelta
+
+from django.utils import timezone
+from factory.declarations import LazyFunction, SubFactory
 from factory.django import DjangoModelFactory
 from factory.faker import Faker
 from factory.fuzzy import FuzzyChoice, FuzzyInteger
@@ -11,6 +14,8 @@ from .models import (
     OIMEContributor,
     OIMEFight,
     OIMEProposal,
+    OIMESelection,
+    OIMEYear,
     Tube,
 )
 
@@ -75,3 +80,26 @@ class OIMECommentFactory(DjangoModelFactory):
     author = SubFactory(OIMEContributorFactory)
     proposal = SubFactory(OIMEProposalFactory)
     content = Faker("paragraph")
+
+
+class OIMEYearFactory(DjangoModelFactory):
+    """A year whose proposal window is open right now and that is not released."""
+
+    class Meta:
+        model = OIMEYear
+
+    display_name = Faker("company")
+    proposals_open_at = LazyFunction(lambda: timezone.now() - timedelta(days=1))
+    proposals_close_at = LazyFunction(lambda: timezone.now() + timedelta(days=30))
+    release_at = None
+    overleaf_url = Faker("url")
+
+
+class OIMESelectionFactory(DjangoModelFactory):
+    class Meta:
+        model = OIMESelection
+
+    year = SubFactory(OIMEYearFactory)
+    proposal = SubFactory(OIMEProposalFactory)
+    status = "SEL_SHORTLISTED"
+    editor = None
