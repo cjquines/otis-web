@@ -1,8 +1,14 @@
+from typing import TYPE_CHECKING, ClassVar
+
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.functional import cached_property
+
+if TYPE_CHECKING:
+    from django.db.models.fields.related_descriptors import RelatedManager
 
 
 class Tube(models.Model):
@@ -141,6 +147,55 @@ class OIMEContributor(models.Model):
         return self.display_name
 
 
+class OIMEYear(models.Model):
+    """One season of the OTIS Mock AIME.
+
+    Only one model even when there's two tests. Sets the proposal window, links
+    to the Overleaf project where editing happens, and records when the contest
+    is released; at that point every chosen problem is retired.
+    """
+
+    display_name = models.CharField(
+        max_length=128, help_text="e.g. OTIS Mock AIME 2027"
+    )
+    proposals_open_at = models.DateTimeField(
+        help_text="Problem proposals are accepted from this moment."
+    )
+    proposals_close_at = models.DateTimeField(
+        help_text="Problem proposals are no longer accepted from this moment."
+    )
+    release_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the contest goes public. From this moment every selected "
+        "problem (anything not deferred) is retired.",
+    )
+    overleaf_url = models.URLField(
+        blank=True,
+        help_text="The Overleaf project where selected problems are edited.",
+    )
+
+    if TYPE_CHECKING:
+        selections: "RelatedManager[OIMESelection]"
+
+    class Meta:
+        ordering = ("-proposals_open_at",)
+
+    def __str__(self) -> str:
+        return self.display_name
+
+    def get_absolute_url(self) -> str:
+        return reverse("oime-year-detail", args=[self.pk])
+
+    @classmethod
+    def accepting(cls) -> "models.QuerySet[OIMEYear]":
+        """Years whose proposal window contains the present moment."""
+        now = timezone.now()
+        return cls.objects.filter(
+            proposals_open_at__lte=now, proposals_close_at__gt=now
+        )
+
+
 class OIMEProposal(models.Model):
     SUBJECT_CHOICES = (
         ("A", "Alg"),
@@ -204,6 +259,9 @@ class OIMEProposal(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    if TYPE_CHECKING:
+        selections: "RelatedManager[OIMESelection]"
+
     class Meta:
         ordering = ("-created_at",)
 
@@ -212,6 +270,17 @@ class OIMEProposal(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("oime-proposal-detail", args=[self.pk])
+
+    @classmethod
+    def in_pool(cls) -> "models.QuerySet[OIMEProposal]":
+        """Problems open for testsolving: published, not archived, not retired.
+
+        A problem is retired once it's selected for a released contest year.
+        """
+        retired = OIMESelection.retiring().values("proposal_id")
+        return cls.objects.filter(is_draft=False, archived=False).exclude(
+            pk__in=retired
+        )
 
     @property
     def label(self) -> str:
@@ -229,6 +298,92 @@ class OIMEProposal(models.Model):
     @property
     def time_limit_minutes(self) -> int:
         return 5 * self.difficulty + 5
+
+    @cached_property
+    def is_selected(self) -> bool:
+        """Chosen for some year's contest (shortlisted or further along).
+
+        From that point the TeX repository owns the text, so the author can no
+        longer edit it here. Deferred selections do not count.
+        """
+        return self.selections.exclude(status="SEL_DEFERRED").exists()
+
+    @cached_property
+    def is_retired(self) -> bool:
+        """Chosen for a released contest."""
+        return OIMESelection.retiring().filter(proposal=self).exists()
+
+    @property
+    def is_frozen(self) -> bool:
+        """No new sessions, upvotes or comments: archived or retired."""
+        return self.archived or self.is_retired
+
+
+class OIMESelection(models.Model):
+    """Verdict of one proposal for one year.
+
+    No row means unreviewed. Deferred is reviewed and passed over, staying in
+    pool for later years. Anything else means chosen; status tracks editing,
+    which happens in Overleaf. The statement and solution stored here are the
+    originals.
+    """
+
+    STATUS_CHOICES = (
+        ("SEL_DEFERRED", "Deferred"),
+        ("SEL_SHORTLISTED", "Shortlisted"),
+        ("SEL_EDITING", "Editing"),
+        ("SEL_REVIEW", "In review"),
+        ("SEL_DONE", "Done"),
+    )
+    BLOCKED_ON: ClassVar[dict[str, str]] = {
+        "SEL_DEFERRED": "",
+        "SEL_SHORTLISTED": "EIC",
+        "SEL_EDITING": "editor",
+        "SEL_REVIEW": "EIC",
+        "SEL_DONE": "",
+    }
+    year = models.ForeignKey(
+        OIMEYear, on_delete=models.CASCADE, related_name="selections"
+    )
+    proposal = models.ForeignKey(
+        OIMEProposal, on_delete=models.CASCADE, related_name="selections"
+    )
+    status = models.CharField(
+        max_length=16, choices=STATUS_CHOICES, default="SEL_SHORTLISTED"
+    )
+    editor = models.ForeignKey(
+        OIMEContributor,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="editing",
+        help_text="The contributor writing up the solution in the TeX repository.",
+    )
+    notes = models.TextField(blank=True, help_text="Staff-only problem notes.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = (("year", "proposal"),)
+        ordering = ("proposal__subject", "proposal_id")
+
+    def __str__(self) -> str:
+        return f"{self.proposal.label} for {self.year}"
+
+    @classmethod
+    def retiring(cls) -> "models.QuerySet[OIMESelection]":
+        """All selections that should retire their problem."""
+        return cls.objects.filter(year__release_at__lte=timezone.now()).exclude(
+            status="SEL_DEFERRED"
+        )
+
+    @property
+    def is_deferred(self) -> bool:
+        return self.status == "SEL_DEFERRED"
+
+    @property
+    def blocked_on(self) -> str:
+        return self.BLOCKED_ON[self.status]
 
 
 class OIMEFight(models.Model):

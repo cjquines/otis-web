@@ -10,6 +10,8 @@ from .models import (
     OIMEContributor,
     OIMEFight,
     OIMEProposal,
+    OIMESelection,
+    OIMEYear,
     Tube,
 )
 
@@ -112,3 +114,32 @@ class OIMECommentAdmin(admin.ModelAdmin[OIMEComment]):
 
     def view_on_site(self, obj: OIMEComment) -> str:
         return obj.proposal.get_absolute_url()
+
+
+class OIMESelectionInline(admin.TabularInline[OIMESelection, OIMEYear]):
+    model = OIMESelection
+    extra = 0
+    fields = ("proposal", "status", "editor", "notes")
+    autocomplete_fields = ("proposal", "editor")
+
+
+@admin.register(OIMEYear)
+class OIMEYearAdmin(admin.ModelAdmin[OIMEYear]):
+    list_display = (
+        "display_name",
+        "proposals_open_at",
+        "proposals_close_at",
+        "release_at",
+    )
+    list_display_links = ("display_name",)
+    inlines = (OIMESelectionInline,)
+
+
+@admin.register(OIMESelection)
+class OIMESelectionAdmin(admin.ModelAdmin[OIMESelection]):
+    list_display = ("proposal", "year", "status", "editor", "updated_at")
+    list_display_links = ("proposal",)
+    list_filter = ("year", "status")
+    search_fields = ("proposal__title", "editor__display_name")
+    autocomplete_fields = ("proposal", "editor")
+    list_select_related = ("proposal", "year", "editor")

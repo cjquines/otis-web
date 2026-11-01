@@ -74,6 +74,8 @@ from tubes.factories import (
     OIMEContributorFactory,
     OIMEFightFactory,
     OIMEProposalFactory,
+    OIMESelectionFactory,
+    OIMEYearFactory,
     TubeFactory,
 )
 from tubes.models import OIMEContributor, OIMEFight, OIMEProposal
@@ -122,6 +124,11 @@ P_OIME_UPVOTE = 0.5  # chance a solved proposal gets an upvote from its solver
 P_OIME_COMMENT = 0.25  # chance a finished testsolve leaves a comment
 P_OIME_REVEAL = 0.1  # chance a contributor spoils a proposal they never fought
 OIME_DAYS = 90  # how far back OIME proposals and testsolves are spread
+OIME_CUTOVER_DAYS = 30  # days since last year's window closed and this year's opened
+OIME_RELEASE_DAYS = 7  # days since last year's contest went public
+P_OIME_PICKED = 0.3  # chance last year's contest used a problem from its window
+P_OIME_PASSED = 0.5  # chance an unused problem was explicitly deferred last year
+P_OIME_REVIEWED = 0.9  # chance this year's editor has reviewed a pooled problem
 # Weights for how a finished testsolve turned out.
 OIME_OUTCOMES = (
     ("OIME_OK", 55),  # solved
@@ -478,6 +485,73 @@ def create_oime_reactions(
     bulk_create_rows(OIMECommentFactory, comments, "author", "proposal")
 
 
+# How this year's reviewed problems are spread over the editing pipeline.
+OIME_SELECTIONS = (
+    ("SEL_DEFERRED", 20),
+    ("SEL_SHORTLISTED", 20),
+    ("SEL_EDITING", 20),
+    ("SEL_REVIEW", 20),
+    ("SEL_DONE", 20),
+)
+
+
+def create_oime_years(
+    contributors: list[OIMEContributor], proposals: list[OIMEProposal]
+):
+    """Last year's released contest, which retired its picks, and this year's."""
+    now = timezone.now()
+    cutover = now - timedelta(days=OIME_CUTOVER_DAYS)
+    print("Creating 2 OIME years")
+    last_year = OIMEYearFactory.create(
+        display_name=f"OTIS Mock AIME {now.year}",
+        proposals_open_at=now - timedelta(days=OIME_DAYS + 1),
+        proposals_close_at=cutover,
+        release_at=now - timedelta(days=OIME_RELEASE_DAYS),
+    )
+    this_year = OIMEYearFactory.create(
+        display_name=f"OTIS Mock AIME {now.year + 1}",
+        proposals_open_at=cutover,
+        proposals_close_at=now + timedelta(days=OIME_DAYS),
+    )
+
+    statuses = [status for status, _ in OIME_SELECTIONS]
+    weights = [weight for _, weight in OIME_SELECTIONS]
+    rows: list[Any] = []
+    for proposal in proposals:
+        if proposal.is_draft or proposal.archived:
+            continue
+        if proposal.created_at < cutover:
+            if random.random() < P_OIME_PICKED:
+                # Picked and released, so retired; it never reaches this year.
+                rows.append((last_year, proposal, "SEL_DONE"))
+                continue
+            if random.random() < P_OIME_PASSED:
+                rows.append((last_year, proposal, "SEL_DEFERRED"))
+        if random.random() < P_OIME_REVIEWED:
+            rows.append((this_year, proposal, random.choices(statuses, weights)[0]))
+
+    print(f"Creating {len(rows)} OIME selections")
+    bulk_create_rows(
+        OIMESelectionFactory,
+        [
+            (
+                year,
+                proposal,
+                status,
+                # Only problems past the shortlist have someone writing them up.
+                random.choice(contributors)
+                if status in ("SEL_EDITING", "SEL_REVIEW", "SEL_DONE")
+                else None,
+            )
+            for year, proposal, status in rows
+        ],
+        "year",
+        "proposal",
+        "status",
+        "editor",
+    )
+
+
 def create_oime(args: argparse.Namespace, users: list[User]):
     """Creates the OIME tube: contributors, proposals, testsolves and discussion."""
     contributors = create_oime_contributors(users)
@@ -486,6 +560,7 @@ def create_oime(args: argparse.Namespace, users: list[User]):
     proposals = create_oime_proposals(args.oime_num, contributors)
     fights = create_oime_fights(contributors, proposals)
     create_oime_reactions(contributors, proposals, fights)
+    create_oime_years(contributors, proposals)
 
 
 def assign_curriculums(students: list[Student]):
