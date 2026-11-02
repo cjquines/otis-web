@@ -28,6 +28,7 @@ django.setup()
 
 from django.conf import settings
 from django.contrib.auth.models import Group, User
+from django.db.models import Max
 from django.utils import timezone
 from factory.base import Factory
 from factory.declarations import Iterator
@@ -60,7 +61,7 @@ from rpg.factories import (
     AchievementUnlockFactory,
     QuestCompleteFactory,
 )
-from rpg.models import Achievement
+from rpg.models import Achievement, Level, PrestigeContract
 from suggestions.factories import ProblemSuggestionFactory
 from surveys.factories import (
     GMFeedbackFactory,
@@ -701,6 +702,61 @@ def create_sem_dependent(
     create_survey(semester, students)
 
 
+def create_prestige_student(
+    semester: Semester,
+    verified_group: Group,
+    username: str,
+    last_name: str,
+    per_suit: int,
+    contract: int,
+) -> Student:
+    """A student with `per_suit` in every suit, before `contract` (a square
+    root) is deducted from each. Uses B units so no clubs bonus applies."""
+    user: User = UserFactory.create(
+        username=username,
+        first_name="Prestige",
+        last_name=last_name,
+        groups=(verified_group,),
+    )
+    student: Student = StudentFactory.create(user=user, semester=semester)
+    units = list(Unit.objects.filter(code__startswith="B").order_by("pk")[:4])
+    student.curriculum.set(units)
+    for unit in units:
+        PSetFactory.create(
+            student=student,
+            unit=unit,
+            next_unit_to_unlock=unit,
+            clubs=per_suit // len(units),
+            hours=per_suit / len(units),
+        )
+    AchievementUnlockFactory.create(
+        user=user, achievement=AchievementFactory.create(diamonds=per_suit)
+    )
+    QuestCompleteFactory.create(student=student, spades=per_suit)
+    if contract > 0:
+        square = contract**2
+        PrestigeContract.objects.create(
+            user=user, clubs=square, hearts=square, spades=square, diamonds=square
+        )
+    return student
+
+
+def create_prestige_students(semester: Semester, verified_group: Group):
+    """One student who can sign a prestige contract, and one who has.
+
+    With the default 100 levels: 26^2 per suit is Lv 104, and 30^2 per suit
+    less 25^2 is 275 per suit, or Lv 64 with one star."""
+    max_level = Level.objects.aggregate(max=Max("threshold"))["max"] or 0
+    root = max_level // 4
+    print("Creating a student who can prestige and one who has")
+    create_prestige_student(
+        semester, verified_group, "prestige_ready", "Ready", (root + 1) ** 2, 0
+    )
+    create_prestige_student(
+        semester, verified_group, "prestige_done", "Done", (root + 5) ** 2, root
+    )
+
+
 def create_survey(semester: Semester, students: list[Student]):
     """Creates Survey 1 for the semester, open now if the semester is active.
 
@@ -818,6 +874,7 @@ def main():
     create_sem_dependent(
         args, current_semester, random.sample(users, int(0.7 * len(users)))
     )
+    create_prestige_students(current_semester, verified_group)
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ from django.core.serializers import deserialize
 from core.models import Semester
 from dashboard.models import PSet
 from roster.models import Student
+from rpg.models import PrestigeContract
 from tubes.models import OIMEFight, OIMEProposal
 
 FIXTURE_DIR = Path(settings.BASE_DIR) / "fixtures"
@@ -69,7 +70,8 @@ def test_populate(monkeypatch: pytest.MonkeyPatch):
     import_populate().main()
 
     assert Semester.objects.count() == 2
-    assert Student.objects.count() == 4 + 5
+    assert Student.objects.count() == 4 + 5 + 2  # two prestige students
+    assert PrestigeContract.objects.count() == 1
     assert PSet.objects.exists()
     assert OIMEProposal.objects.count() == 6
     assert OIMEFight.objects.exists()

@@ -12508,5 +12508,395 @@
       "domain": "example.com",
       "name": "example.com"
     }
+  },
+  {
+    "model": "dashboard.uploadedfile",
+    "pk": 54,
+    "fields": {
+      "benefactor": 33,
+      "owner": 28,
+      "category": "psets",
+      "description": "",
+      "content": "psets/prestige_ready/2026-11-02-155652-619439/TESTING_pset.txt",
+      "unit": 1,
+      "created_at": "2026-11-02T15:56:52.619Z"
+    }
+  },
+  {
+    "model": "dashboard.uploadedfile",
+    "pk": 55,
+    "fields": {
+      "benefactor": 33,
+      "owner": 28,
+      "category": "psets",
+      "description": "",
+      "content": "psets/prestige_ready/2026-11-02-155652-629114/TESTING_pset.txt",
+      "unit": 3,
+      "created_at": "2026-11-02T15:56:52.629Z"
+    }
+  },
+  {
+    "model": "dashboard.uploadedfile",
+    "pk": 56,
+    "fields": {
+      "benefactor": 33,
+      "owner": 28,
+      "category": "psets",
+      "description": "",
+      "content": "psets/prestige_ready/2026-11-02-155652-636550/TESTING_pset.txt",
+      "unit": 9,
+      "created_at": "2026-11-02T15:56:52.636Z"
+    }
+  },
+  {
+    "model": "dashboard.uploadedfile",
+    "pk": 57,
+    "fields": {
+      "benefactor": 33,
+      "owner": 28,
+      "category": "psets",
+      "description": "",
+      "content": "psets/prestige_ready/2026-11-02-155652-642994/TESTING_pset.txt",
+      "unit": 14,
+      "created_at": "2026-11-02T15:56:52.643Z"
+    }
+  },
+  {
+    "model": "dashboard.uploadedfile",
+    "pk": 58,
+    "fields": {
+      "benefactor": 34,
+      "owner": 29,
+      "category": "psets",
+      "description": "",
+      "content": "psets/prestige_done/2026-11-02-155652-704064/TESTING_pset.txt",
+      "unit": 1,
+      "created_at": "2026-11-02T15:56:52.704Z"
+    }
+  },
+  {
+    "model": "dashboard.uploadedfile",
+    "pk": 59,
+    "fields": {
+      "benefactor": 34,
+      "owner": 29,
+      "category": "psets",
+      "description": "",
+      "content": "psets/prestige_done/2026-11-02-155652-710407/TESTING_pset.txt",
+      "unit": 3,
+      "created_at": "2026-11-02T15:56:52.710Z"
+    }
+  },
+  {
+    "model": "dashboard.uploadedfile",
+    "pk": 60,
+    "fields": {
+      "benefactor": 34,
+      "owner": 29,
+      "category": "psets",
+      "description": "",
+      "content": "psets/prestige_done/2026-11-02-155652-716740/TESTING_pset.txt",
+      "unit": 9,
+      "created_at": "2026-11-02T15:56:52.716Z"
+    }
+  },
+  {
+    "model": "dashboard.uploadedfile",
+    "pk": 61,
+    "fields": {
+      "benefactor": 34,
+      "owner": 29,
+      "category": "psets",
+      "description": "",
+      "content": "psets/prestige_done/2026-11-02-155652-723879/TESTING_pset.txt",
+      "unit": 14,
+      "created_at": "2026-11-02T15:56:52.724Z"
+    }
+  },
+  {
+    "model": "dashboard.pset",
+    "pk": 54,
+    "fields": {
+      "status": "A",
+      "student": 33,
+      "unit": 1,
+      "upload": 54,
+      "hours": 169.0,
+      "clubs": 169,
+      "eligible": true,
+      "feedback": "",
+      "next_unit_to_unlock": 1,
+      "special_notes": "",
+      "staff_comments": ""
+    }
+  },
+  {
+    "model": "dashboard.pset",
+    "pk": 55,
+    "fields": {
+      "status": "A",
+      "student": 33,
+      "unit": 3,
+      "upload": 55,
+      "hours": 169.0,
+      "clubs": 169,
+      "eligible": true,
+      "feedback": "",
+      "next_unit_to_unlock": 3,
+      "special_notes": "",
+      "staff_comments": ""
+    }
+  },
+  {
+    "model": "dashboard.pset",
+    "pk": 56,
+    "fields": {
+      "status": "A",
+      "student": 33,
+      "unit": 9,
+      "upload": 56,
+      "hours": 169.0,
+      "clubs": 169,
+      "eligible": true,
+      "feedback": "",
+      "next_unit_to_unlock": 9,
+      "special_notes": "",
+      "staff_comments": ""
+    }
+  },
+  {
+    "model": "dashboard.pset",
+    "pk": 57,
+    "fields": {
+      "status": "A",
+      "student": 33,
+      "unit": 14,
+      "upload": 57,
+      "hours": 169.0,
+      "clubs": 169,
+      "eligible": true,
+      "feedback": "",
+      "next_unit_to_unlock": 14,
+      "special_notes": "",
+      "staff_comments": ""
+    }
+  },
+  {
+    "model": "dashboard.pset",
+    "pk": 58,
+    "fields": {
+      "status": "A",
+      "student": 34,
+      "unit": 1,
+      "upload": 58,
+      "hours": 225.0,
+      "clubs": 225,
+      "eligible": true,
+      "feedback": "",
+      "next_unit_to_unlock": 1,
+      "special_notes": "",
+      "staff_comments": ""
+    }
+  },
+  {
+    "model": "dashboard.pset",
+    "pk": 59,
+    "fields": {
+      "status": "A",
+      "student": 34,
+      "unit": 3,
+      "upload": 59,
+      "hours": 225.0,
+      "clubs": 225,
+      "eligible": true,
+      "feedback": "",
+      "next_unit_to_unlock": 3,
+      "special_notes": "",
+      "staff_comments": ""
+    }
+  },
+  {
+    "model": "dashboard.pset",
+    "pk": 60,
+    "fields": {
+      "status": "A",
+      "student": 34,
+      "unit": 9,
+      "upload": 60,
+      "hours": 225.0,
+      "clubs": 225,
+      "eligible": true,
+      "feedback": "",
+      "next_unit_to_unlock": 9,
+      "special_notes": "",
+      "staff_comments": ""
+    }
+  },
+  {
+    "model": "dashboard.pset",
+    "pk": 61,
+    "fields": {
+      "status": "A",
+      "student": 34,
+      "unit": 14,
+      "upload": 61,
+      "hours": 225.0,
+      "clubs": 225,
+      "eligible": true,
+      "feedback": "",
+      "next_unit_to_unlock": 14,
+      "special_notes": "",
+      "staff_comments": ""
+    }
+  },
+  {
+    "model": "roster.student",
+    "pk": 33,
+    "fields": {
+      "user": 28,
+      "semester": 2,
+      "reg": null,
+      "standing": "STND_GOOD",
+      "last_level_seen": 0,
+      "curriculum": [14, 9, 3, 1],
+      "unlocked_units": []
+    }
+  },
+  {
+    "model": "roster.student",
+    "pk": 34,
+    "fields": {
+      "user": 29,
+      "semester": 2,
+      "reg": null,
+      "standing": "STND_GOOD",
+      "last_level_seen": 0,
+      "curriculum": [14, 9, 3, 1],
+      "unlocked_units": []
+    }
+  },
+  {
+    "model": "rpg.achievement",
+    "pk": 7,
+    "fields": {
+      "code": "e315f948786a68fd5e3ea73f",
+      "name": "Information officer",
+      "image": "badges/TESTING_r8ca1b934af63bd47.png",
+      "description": "Concern goal price join three four.",
+      "solution": "Account cause listen data sport finally.",
+      "diamonds": 676,
+      "creator": null,
+      "always_show_image": false,
+      "show_solution": true,
+      "show_creator": false,
+      "special_effect_id": null
+    }
+  },
+  {
+    "model": "rpg.achievement",
+    "pk": 8,
+    "fields": {
+      "code": "208b93dd114cefe4c13ede97",
+      "name": "Occupational hygienist",
+      "image": "badges/TESTING_rc6e36fc63a0f5960.png",
+      "description": "Lead teacher cultural expect middle dream them.",
+      "solution": "Catch apply civil day fill ever everyone mean.",
+      "diamonds": 900,
+      "creator": null,
+      "always_show_image": false,
+      "show_solution": true,
+      "show_creator": false,
+      "special_effect_id": null
+    }
+  },
+  {
+    "model": "rpg.achievementunlock",
+    "pk": 41,
+    "fields": {
+      "user": 28,
+      "achievement": 7,
+      "timestamp": "2026-11-02T15:56:52.683Z",
+      "is_first_obtain": false
+    }
+  },
+  {
+    "model": "rpg.achievementunlock",
+    "pk": 42,
+    "fields": {
+      "user": 29,
+      "achievement": 8,
+      "timestamp": "2026-11-02T15:56:52.733Z",
+      "is_first_obtain": false
+    }
+  },
+  {
+    "model": "rpg.questcomplete",
+    "pk": 21,
+    "fields": {
+      "student": 33,
+      "title": "Geologist, engineering",
+      "spades": 676,
+      "timestamp": "2026-11-02T15:56:52.687Z",
+      "category": "MS"
+    }
+  },
+  {
+    "model": "rpg.questcomplete",
+    "pk": 22,
+    "fields": {
+      "student": 34,
+      "title": "Forensic psychologist",
+      "spades": 900,
+      "timestamp": "2026-11-02T15:56:52.736Z",
+      "category": "MS"
+    }
+  },
+  {
+    "model": "rpg.prestigecontract",
+    "pk": 1,
+    "fields": {
+      "user": 29,
+      "created_at": "2026-11-02T15:56:52.739Z",
+      "clubs": 625,
+      "hearts": 625,
+      "spades": 625,
+      "diamonds": 625
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 28,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "prestige_ready",
+      "first_name": "Prestige",
+      "last_name": "Ready",
+      "email": "xsmith@example.com",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-11-02T15:56:52.591Z",
+      "groups": [1],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "auth.user",
+    "pk": 29,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "prestige_done",
+      "first_name": "Prestige",
+      "last_name": "Done",
+      "email": "nancy82@example.org",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-11-02T15:56:52.690Z",
+      "groups": [1],
+      "user_permissions": []
+    }
   }
 ]
